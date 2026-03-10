@@ -1,50 +1,54 @@
 console.log("content.js loaded");
 
-let annotationColor = "yellow";
-let allowHighlight = true;
+const state = {
+    tool: 'highlighter',
+    color: '#FFD700',
+}
 
-document.addEventListener("mouseup", handleMouseUp);
-
+//Message listener
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
-    if (request.type === "SET_ANNOTATION_COLOR") {
-        annotationColor = request.value;
-
-        console.log("annotationColor updated:", annotationColor);
-
-        sendResponse({success: true});
+    switch(request.type) {
+        case 'SET_TOOL':
+            state.tool = request.value;
+            if (request.value === 'marker') enableMarkerMode();
+            else disableMarkerMode();
+            sendResponse({success: true});
+            break;
+        case 'SET_ANNOTATION_COLOR':
+            state.color = request.value;
+            sendResponse({success: true});
+            break;
+        case 'CLEAR_MARKER':
+            clearMarker();
+            break;
+        case 'CLEAR_HIGHLIGHTS':
+            clearHighlights();
+            break;
     }
-
-    if (request.type === "TOGGLE_HIGHLIGHT") {
-       allowHighlight = !allowHighlight;
-
-        console.log("allowHighlight updated:", allowHighlight);
-
-        sendResponse({success: true});
-    }
-
 });
 
+// HIGHLIGHTER FUNCTIONALITY
+//------------------------------------------------------------------------------
+document.addEventListener("mouseup", handleMouseUp);
+
 function handleMouseUp() {
+    if (state.tool !== 'highlighter') return;
+
     const selection = window.getSelection();
 
     if (!selection || selection.isCollapsed) return;
 
     const selectedText = selection.toString().trim();
 
-    if (selectedText.length > 0) {
-        console.log("User selected: ", selectedText);
-    }
+    if (selectedText.length === 0) return;
 
     const range = selection.getRangeAt(0);
-
-    if (allowHighlight) {
-        highlightRange(range);
-    }
-
+    highlightRange(range);
     selection.removeAllRanges();
 }
 
+//highlights the range
 function highlightRange(range) {
     //List of all nodes within the range
     nodes = getNodesInRange(range);
@@ -128,12 +132,11 @@ function highlightRange(range) {
     //Creating final span to wrap the whole range
     const rangeSpan = document.createElement("span");
     rangeSpan.classList.add("anchornote-highlight");
-    rangeSpan.style.backgroundColor = annotationColor;
+    rangeSpan.style.backgroundColor = state.color;
 
     console.log("range before surroundContents:", range.toString());
     range.surroundContents(rangeSpan);
 }
-
 
 //checks if current node starts before the range
 function nodeStartsBeforeRange(node, range) {
@@ -187,3 +190,114 @@ function getNodesInRange(range) {
 
     return nodes;
 }
+
+//Clears all highlights
+function clearHighlights() {
+    console.log("Clearing highlights");
+    document.querySelectorAll('.anchornote-highlight').forEach(span => {
+        while (span.firstChild) {
+        span.parentNode.insertBefore(span.firstChild, span);
+        }
+        span.remove();
+    });
+}
+
+//------------------------------------------------------------------------------
+//MARKER FUNCTIONALITY
+//------------------------------------------------------------------------------
+
+// Marker state
+let isDrawing = false;
+let markerCanvas = null;
+let markerCtx = null;
+let markerSize = 16;
+
+// Toggle marker mode
+function toggleMarkerMode() {
+    if (state.tool === 'marker') disableMarkerMode();
+    else enableMarkerMode();
+}
+
+function enableMarkerMode() {
+    state.tool = 'marker';
+    // Create canvas overlay if it doesn't exist
+    if (!markerCanvas) {
+        markerCanvas = document.createElement('canvas');
+        markerCanvas.id = 'anchornote-marker-canvas';
+        markerCanvas.style.position = 'absolute';
+        markerCanvas.style.top = '0';
+        markerCanvas.style.left = '0';
+        markerCanvas.style.width = `${document.body.scrollWidth}px`;
+        markerCanvas.style.height = `${document.body.scrollHeight}px`;
+        markerCanvas.style.zIndex = '99999';
+        markerCanvas.style.pointerEvents = 'none'; // will toggle on/off
+        markerCanvas.style.cursor = 'crosshair';
+        markerCanvas.width = document.body.scrollWidth;
+        markerCanvas.height = document.body.scrollHeight;
+        document.body.appendChild(markerCanvas);
+        markerCtx = markerCanvas.getContext('2d');
+    }
+
+    // Enable pointer events on canvas so it captures mouse
+    markerCanvas.style.pointerEvents = 'auto';
+
+    // Add event listeners
+    markerCanvas.addEventListener('mousedown', onMarkerMouseDown);
+    markerCanvas.addEventListener('mousemove', onMarkerMouseMove);
+    markerCanvas.addEventListener('mouseup', onMarkerMouseUp);
+    markerCanvas.addEventListener('mouseleave', onMarkerMouseUp);
+
+    console.log('Marker mode enabled');
+}
+
+function disableMarkerMode() {
+    state.tool = 'highlighter';
+
+    if (markerCanvas) {
+        markerCanvas.style.pointerEvents = 'none';
+        markerCanvas.removeEventListener('mousedown', onMarkerMouseDown);
+        markerCanvas.removeEventListener('mousemove', onMarkerMouseMove);
+        markerCanvas.removeEventListener('mouseup', onMarkerMouseUp);
+        markerCanvas.removeEventListener('mouseleave', onMarkerMouseUp);
+    }
+    isDrawing = false;
+    console.log('Marker mode disabled');
+}
+
+function onMarkerMouseDown(e) {
+    isDrawing = true;
+    markerCtx.beginPath();
+    markerCtx.moveTo(e.clientX + window.scrollX, e.clientY + window.scrollY);
+}
+
+function onMarkerMouseMove(e) {
+    if (!isDrawing) return;
+    markerCtx.lineTo(e.clientX + window.scrollX, e.clientY + window.scrollY);
+    markerCtx.strokeStyle = state.color + '80';
+    markerCtx.lineWidth = 16;
+    markerCtx.lineCap = 'round';
+    markerCtx.lineJoin = 'round';
+    markerCtx.stroke();
+}
+
+function onMarkerMouseUp() {
+    isDrawing = false;
+    markerCtx.closePath();
+}
+
+// Clear all marker drawings
+function clearMarker() {
+    if (markerCtx) {
+        markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+    }
+}
+
+// Handle window resize — rescale canvas
+window.addEventListener('resize', () => {
+    if (markerCanvas) {
+        const imageData = markerCtx.getImageData(0, 0, markerCanvas.width, markerCanvas.height);
+        markerCanvas.width = document.body.scrollWidth;
+        markerCanvas.height = document.body.scrollHeight;
+        markerCtx.putImageData(imageData, 0, 0);
+    }
+});

@@ -8,8 +8,62 @@
     <script src="popup.js" defer></script>
 </head>
 <body>
-    <button type="button" class="color-btn" data-color="yellow">Yellow</button>
-    <button type="button" class="color-btn" data-color="red">Red</button>
-    <button type="button" class="color-btn" data-color="blue">Blue</button>
+    <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        </div>
+        <div class="brand">
+        <span class="brand-name">AnchorNote</span>
+        <span class="brand-tagline">Annotate the web</span>
+        </div>
+    </div>
+
+    <!-- Tool Select -->
+    <div class="section-label">Tool</div>
+    <div class="tool-toggle">
+        <button class="tool-btn " id="btn-highlighter" data-tool="highlighter">
+        <span class="tool-icon">🖊</span>
+        <span class="tool-name">Highlighter</span>
+        </button>
+        <button class="tool-btn" id="btn-marker" data-tool="marker">
+        <span class="tool-icon">🖌</span>
+        <span class="tool-name">Marker</span>
+        </button>
+    </div>
+
+    <!-- Color Palette -->
+    <div class="section-label">Color</div>
+    <div class="color-palette">
+        <button class="color-btn color-yellow " data-color="#FFD700" title="Yellow"></button>
+        <button class="color-btn color-green"  data-color="#4ade80" title="Green"></button>
+        <button class="color-btn color-pink"   data-color="#f472b6" title="Pink"></button>
+        <button class="color-btn color-blue"   data-color="#60a5fa" title="Blue"></button>
+        <button class="color-btn color-orange" data-color="#fb923c" title="Orange"></button>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Actions -->
+    <div class="actions">
+        <button class="action-btn" id="clearMarker" title="Clear all marker drawings">
+        ✦ Clear Marker
+        </button>
+        <button class="action-btn danger" id="clearHighlights" title="Remove all highlights">
+        ✕ Clear Highlights
+        </button>
+    </div>
+
+    <!-- Status -->
+    <div class="status-row">
+        <div class="status-dot"></div>
+        <span class="status-text" id="status-text">Highlighter active</span>
+    </div>
+
+    </div>
 </body>
 </html>
