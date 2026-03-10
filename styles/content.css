@@ -1,0 +1,13 @@
+.anchornote-highlight {
+  border-radius: 2px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.anchornote-highlight:hover {
+  filter: brightness(0.85);
+}
+
+#anchornote-marker-canvas {
+  pointer-events: none;
+}
