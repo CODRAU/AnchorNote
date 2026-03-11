@@ -283,7 +283,11 @@ function disableMarkerMode() {
 function onMarkerMouseDown(e) {
     isDrawing = true;
     currentStroke = {
-        points: [e.clientX + window.scrollX, e.clientY + window.scrollY],
+        //Normalizing coordinates
+        points: [
+            (e.clientX + window.scrollX) / document.body.scrollWidth,
+            (e.clientY + window.scrollY) / document.body.scrollHeight
+        ],
         color: state.color,
         size: markerSize
     };
@@ -291,7 +295,10 @@ function onMarkerMouseDown(e) {
 
 function onMarkerMouseMove(e) {
     if (!isDrawing) return;
-    currentStroke.points.push(e.clientX + window.scrollX, e.clientY + window.scrollY);
+    currentStroke.points.push(
+        (e.clientX + window.scrollX) / document.body.scrollWidth,
+        (e.clientY + window.scrollY) / document.body.scrollHeight
+    );
     requestAnimationFrame(redraw);
 }
 
@@ -303,21 +310,24 @@ function onMarkerMouseUp() {
 }
 
 function redraw() {
-    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
-    markerCtx.save();
-    markerCtx.translate(-window.scrollX, -window.scrollY);
+    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);  
     strokes.forEach(stroke => drawStroke(stroke));
     if (currentStroke) drawStroke(currentStroke);
-    markerCtx.restore();
 }
 
 function drawStroke(stroke) {
     const points = stroke.points;
     if (points.length < 2) return;
     markerCtx.beginPath();
-    markerCtx.moveTo(points[0], points[1]);
+    markerCtx.moveTo(
+        points[0] * document.body.scrollWidth - window.scrollX,
+        points[1] * document.body.scrollHeight - window.scrollY
+    );
     for (let i = 2; i < points.length; i += 2) {
-        markerCtx.lineTo(points[i], points[i + 1]);
+        markerCtx.lineTo(
+            points[i] * document.body.scrollWidth - window.scrollX,
+            points[i+1] * document.body.scrollHeight - window.scrollY
+        );
     }
     markerCtx.strokeStyle = stroke.color + '80';
     markerCtx.lineWidth = stroke.size;
