@@ -214,32 +214,32 @@ let isDrawing = false;
 let markerCanvas = null;
 let markerCtx = null;
 let markerSize = 16;
+let strokes = [];
+let currentStroke = null;
 
 function enableMarkerMode() {
     // Create canvas overlay if it doesn't exist
     if (!markerCanvas) {
         markerCanvas = document.createElement('canvas');
         markerCanvas.id = 'anchornote-marker-canvas';
-        markerCanvas.style.position = 'absolute';
+        markerCanvas.style.position = 'fixed';
         markerCanvas.style.top = '0';
         markerCanvas.style.left = '0';
         markerCanvas.style.zIndex = '2147483647';
         markerCanvas.style.pointerEvents = 'none'; // will toggle on/off
         markerCanvas.style.cursor = 'crosshair';
         
-        const scale = 0.25;
 
-        markerCanvas.style.width = `${document.body.scrollWidth}px`;
-        markerCanvas.style.height = `${document.body.scrollHeight}px`;
-        markerCanvas.width = document.body.scrollWidth * scale;
-        markerCanvas.height = document.body.scrollHeight * scale;
+        markerCanvas.style.width = `${window.innerWidth}px`;
+        markerCanvas.style.height = `${window.innerHeight}px`;
+        markerCanvas.width = window.innerWidth;
+        markerCanvas.height = window.innerHeight;
         
         markerCanvas.style.willChange = 'transform';
 
         document.body.appendChild(markerCanvas);
 
         markerCtx = markerCanvas.getContext('2d');
-        markerCtx.scale(scale, scale);
     }
 
     // Enable pointer events on canvas so it captures mouse
@@ -255,6 +255,19 @@ function enableMarkerMode() {
     console.log('Marker mode enabled');
 }
 
+function redraw() {
+    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+    markerCtx.save();
+    markerCtx.translate(-window.scrollX, -window.scrollY); // offset by scroll
+    strokes.forEach(stroke => drawStroke(stroke));
+    if (currentStroke) drawStroke(currentStroke);
+    markerCtx.restore();
+}
+
+window.addEventListener('scroll', () => {
+    if (markerCanvas) requestAnimationFrame(redraw);
+});
+
 function disableMarkerMode() {
     if (markerCanvas) {
         markerCanvas.style.pointerEvents = 'none';
@@ -269,37 +282,63 @@ function disableMarkerMode() {
 
 function onMarkerMouseDown(e) {
     isDrawing = true;
-    markerCtx.beginPath();
-    markerCtx.moveTo(e.clientX + window.scrollX, e.clientY + window.scrollY);
+    currentStroke = {
+        points: [e.clientX + window.scrollX, e.clientY + window.scrollY],
+        color: state.color,
+        size: markerSize
+    };
 }
 
 function onMarkerMouseMove(e) {
     if (!isDrawing) return;
-    markerCtx.lineTo(e.clientX + window.scrollX, e.clientY + window.scrollY);
-    markerCtx.strokeStyle = state.color + '80';
-    markerCtx.lineWidth = 16;
+    currentStroke.points.push(e.clientX + window.scrollX, e.clientY + window.scrollY);
+    requestAnimationFrame(redraw);
+}
+
+function onMarkerMouseUp() {
+    if (!isDrawing) return;
+    isDrawing = false;
+    if (currentStroke) strokes.push(currentStroke);
+    currentStroke = null;
+}
+
+function redraw() {
+    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+    markerCtx.save();
+    markerCtx.translate(-window.scrollX, -window.scrollY);
+    strokes.forEach(stroke => drawStroke(stroke));
+    if (currentStroke) drawStroke(currentStroke);
+    markerCtx.restore();
+}
+
+function drawStroke(stroke) {
+    const points = stroke.points;
+    if (points.length < 2) return;
+    markerCtx.beginPath();
+    markerCtx.moveTo(points[0], points[1]);
+    for (let i = 2; i < points.length; i += 2) {
+        markerCtx.lineTo(points[i], points[i + 1]);
+    }
+    markerCtx.strokeStyle = stroke.color + '80';
+    markerCtx.lineWidth = stroke.size;
     markerCtx.lineCap = 'round';
     markerCtx.lineJoin = 'round';
     markerCtx.stroke();
 }
 
-function onMarkerMouseUp() {
-    isDrawing = false;
-    markerCtx.closePath();
-}
-
 function clearMarker() {
-    if (markerCtx) {
-        markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
-    }
+    strokes = [];
+    currentStroke = null;
+    if (markerCtx) markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
 }
 
 // Handle window resize — rescale canvas
 window.addEventListener('resize', () => {
     if (markerCanvas) {
-        const imageData = markerCtx.getImageData(0, 0, markerCanvas.width, markerCanvas.height);
-        markerCanvas.width = document.body.scrollWidth;
-        markerCanvas.height = document.body.scrollHeight;
-        markerCtx.putImageData(imageData, 0, 0);
+        markerCanvas.width = window.innerWidth;
+        markerCanvas.height = window.innerHeight;
+        markerCanvas.style.width = `${window.innerWidth}px`;
+        markerCanvas.style.height = `${window.innerHeight}px`;
+        redraw(); // redraw after resize since resizing clears the canvas
     }
 });
