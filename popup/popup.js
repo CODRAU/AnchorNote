@@ -96,12 +96,49 @@ function clearHighlights() {
     });
 }
 
+document.getElementById('marker-size').addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    document.getElementById('marker-size-label').textContent = `${val}px`;
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_MARKER_SIZE', value: val });
+    });
+    chrome.storage.local.set({ markerSize: val });
+});
+
+document.getElementById('marker-opacity').addEventListener('change', (e) => {
+    console.log("SLIDER: ", parseInt(e.target.value));
+    let opacity = parseInt(e.target.value);
+    opacity = Math.max(0, Math.min(100, opacity)); // clamp 0-100
+    e.target.value = opacity;
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_MARKER_OPACITY', value: opacity });
+    });
+    
+    chrome.storage.local.set({ markerOpacity: opacity });
+});
+
 // Restore state on popup load — runs once when popup opens
-chrome.storage.local.get(['tool', 'color'], (result) => {
-  if (result.tool) setTool(result.tool);
-  if (result.color) {
+chrome.storage.local.get(['tool', 'color', 'markerSize', 'markerOpacity'], (result) => {
+    if (result.tool) setTool(result.tool);
+    if (result.color) {
         const btn = [...document.querySelectorAll('.color-btn')]
             .find(b => b.getAttribute('data-color').includes(result.color));
         if (btn) setColor(btn, result.color);
-  }
+    }
+    if (result.markerOpacity) {
+        let opacityInput = document.getElementById("marker-opacity");
+        opacityInput.value = result.markerOpacity;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_MARKER_OPACITY', value: result.markerOpacity });
+        });
+    };
+    if (result.markerSize) {
+        let slider = document.getElementById("marker-size");
+        slider.value = result.markerSize;
+        document.getElementById('marker-size-label').textContent = `${result.markerSize}px`;
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_MARKER_SIZE', value: result.markerSize });
+        });
+    }
 });

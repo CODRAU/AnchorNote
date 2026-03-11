@@ -3,6 +3,8 @@ console.log("content.js loaded");
 const state = {
     tool: 'highlighter',
     color: '#FFD700',
+    markerSize: 16,
+    markerOpacity: 50
 }
 
 //Message listener
@@ -26,6 +28,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             break;
         case 'CLEAR_HIGHLIGHTS':
             clearHighlights();
+            break;
+        case 'SET_MARKER_SIZE':
+            state.markerSize = request.value;
+            break;
+        case 'SET_MARKER_OPACITY':
+            state.markerOpacity = request.value;
             break;
     }
 });
@@ -213,7 +221,6 @@ function clearHighlights() {
 let isDrawing = false;
 let markerCanvas = null;
 let markerCtx = null;
-let markerSize = 16;
 let strokes = [];
 let currentStroke = null;
 
@@ -289,7 +296,8 @@ function onMarkerMouseDown(e) {
             (e.clientY + window.scrollY) / document.body.scrollHeight
         ],
         color: state.color,
-        size: markerSize
+        size: state.markerSize,
+        opacity: state.markerOpacity
     };
 }
 
@@ -329,7 +337,8 @@ function drawStroke(stroke) {
             points[i+1] * document.body.scrollHeight - window.scrollY
         );
     }
-    markerCtx.strokeStyle = stroke.color + '80';
+    const opacityHex = Math.round(stroke.opacity / 100 * 255).toString(16).padStart(2, '0');
+    markerCtx.strokeStyle = stroke.color + opacityHex;
     markerCtx.lineWidth = stroke.size;
     markerCtx.lineCap = 'round';
     markerCtx.lineJoin = 'round';

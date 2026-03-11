@@ -36,14 +36,24 @@
         </button>
     </div>
 
-    <!-- Color Palette -->
+    <!-- Color Palette w/ marker adjustment -->
     <div class="section-label">Color</div>
     <div class="color-palette">
+        <!-- Color selectors -->
         <button class="color-btn color-yellow " data-color="#FFD700" title="Yellow"></button>
         <button class="color-btn color-green"  data-color="#4ade80" title="Green"></button>
         <button class="color-btn color-pink"   data-color="#f472b6" title="Pink"></button>
         <button class="color-btn color-blue"   data-color="#60a5fa" title="Blue"></button>
         <button class="color-btn color-orange" data-color="#fb923c" title="Orange"></button>
+        <!-- Marker property selectors -->
+        <div class="marker-control">
+            <input type="range" id="marker-size" min="4" max="40" value="16" class="size-slider">
+            <span id="marker-size-label" class="marker-label">16px</span>
+        </div>
+        <div class="marker-control">
+            <input type="text" id="marker-opacity" value="50" class="opacity-input" maxlength="3">
+            <span class="marker-label">% Opacity</span>
+        </div>    
     </div>
 
     <div class="divider"></div>

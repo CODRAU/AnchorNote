@@ -23,7 +23,7 @@
 }
 
 body {
-    width: 280px;
+    width: 400px;
     background: var(--navy-deepest);
     font-family: 'DM Sans', sans-serif;
     color: var(--text-primary);
@@ -314,4 +314,44 @@ body::before {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--text-dim);
+}
+
+.size-slider {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+    cursor: pointer;
+}
+
+.opacity-input {
+    width: 36px;
+    background: var(--navy-mid);
+    border: 1px solid var(--navy-border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px;
+    text-align: center;
+    padding: 4px 2px;
+    outline: none;
+}
+
+.opacity-input:focus {
+    border-color: var(--accent);
+}
+
+.marker-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-align: center;
+    display: block;
+    margin-top: 2px;
+}
+
+.marker-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    padding-top: 12px;
 }
