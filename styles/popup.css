@@ -299,6 +299,11 @@ body::before {
     animation: pulse 2s infinite;
 }
 
+.dot-red {
+    background: #de4a4a;
+    box-shadow: 0 0 6px #de4a4a;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }

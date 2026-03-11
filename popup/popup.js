@@ -1,4 +1,4 @@
-let currentTool = 'highlighter';
+let currentTool = 'no_tool';
 let currentColor = '#FFD700';
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -25,7 +25,9 @@ function handleColorClick(event) {
 }
 
 function handleToolClick(event) {
-    const tool = event.target.dataset.tool;
+    let tool = event.target.dataset.tool;
+    if (tool === currentTool) tool = 'no_tool';
+    console.log(tool);
     setTool(tool);
 }
 
@@ -56,9 +58,17 @@ function setTool(tool) {
 
     document.getElementById('btn-highlighter').classList.toggle('active', tool === 'highlighter');
     document.getElementById('btn-marker').classList.toggle('active', tool === 'marker');
-    document.getElementById('status-text').textContent = 
-        tool === 'highlighter' ? 'Highlighter active' : 'Marker active';
 
+    let text = "No tool active";
+    document.querySelector('.status-dot').classList.toggle('dot-red', tool === 'no_tool');
+
+    if (currentTool !== "no_tool") {
+        text = tool === 'highlighter' ? 'Highlighter active' : 'Marker active';
+    } 
+
+    document.getElementById('status-text').textContent = text;
+
+    
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
     chrome.tabs.sendMessage(
