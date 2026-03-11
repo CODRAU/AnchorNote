@@ -215,15 +215,7 @@ let markerCanvas = null;
 let markerCtx = null;
 let markerSize = 16;
 
-
-// Toggle marker mode
-function toggleMarkerMode() {
-    if (state.tool === 'marker') disableMarkerMode();
-    else enableMarkerMode();
-}
-
 function enableMarkerMode() {
-    state.tool = 'marker';
     // Create canvas overlay if it doesn't exist
     if (!markerCanvas) {
         markerCanvas = document.createElement('canvas');
@@ -247,12 +239,6 @@ function enableMarkerMode() {
         document.body.appendChild(markerCanvas);
 
         markerCtx = markerCanvas.getContext('2d');
-
-        markerCanvas.style.pointerEvents = 'auto';
-        markerCanvas.addEventListener('mousedown', onMarkerMouseDown);
-        markerCanvas.addEventListener('mousemove', onMarkerMouseMove);
-        markerCanvas.addEventListener('mouseup', onMarkerMouseUp);
-        markerCanvas.addEventListener('mouseleave', onMarkerMouseUp);
     }
 
     // Enable pointer events on canvas so it captures mouse
