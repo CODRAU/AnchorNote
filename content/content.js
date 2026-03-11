@@ -231,14 +231,15 @@ function enableMarkerMode() {
 
         markerCanvas.style.width = `${document.body.scrollWidth}px`;
         markerCanvas.style.height = `${document.body.scrollHeight}px`;
-        markerCanvas.width = document.body.scrollWidth;
-        markerCanvas.height = document.body.scrollHeight;
+        markerCanvas.width = document.body.scrollWidth * scale;
+        markerCanvas.height = document.body.scrollHeight * scale;
         
         markerCanvas.style.willChange = 'transform';
 
         document.body.appendChild(markerCanvas);
 
         markerCtx = markerCanvas.getContext('2d');
+        markerCtx.scale(scale, scale);
     }
 
     // Enable pointer events on canvas so it captures mouse
