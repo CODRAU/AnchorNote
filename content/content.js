@@ -7,10 +7,12 @@ const state = {
 
 //Message listener
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-
+    console.log("LISTENING TO REQUEST");
     switch(request.type) {
         case 'SET_TOOL':
+            console.log("SETTING TOOL: ", request.value);
             state.tool = request.value;
+            console.log("STATE.TOOL: ", state.tool);
             if (request.value === 'marker') enableMarkerMode();
             else disableMarkerMode();
             sendResponse({success: true});
@@ -33,6 +35,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 document.addEventListener("mouseup", handleMouseUp);
 
 function handleMouseUp() {
+    console.log("MOUSEUP TOOL: ", state.tool);
+
     if (state.tool !== 'highlighter') return;
 
     const selection = window.getSelection();
@@ -154,7 +158,6 @@ function nodeEndsAfterRange(node, range) {
     return nodeRange.toString().length > 0;
 }
 
-
 //Returns list of nodes in range
 function getNodesInRange(range) {
     const container = range.commonAncestorContainer;
@@ -212,6 +215,7 @@ let markerCanvas = null;
 let markerCtx = null;
 let markerSize = 16;
 
+
 // Toggle marker mode
 function toggleMarkerMode() {
     if (state.tool === 'marker') disableMarkerMode();
@@ -227,15 +231,28 @@ function enableMarkerMode() {
         markerCanvas.style.position = 'absolute';
         markerCanvas.style.top = '0';
         markerCanvas.style.left = '0';
-        markerCanvas.style.width = `${document.body.scrollWidth}px`;
-        markerCanvas.style.height = `${document.body.scrollHeight}px`;
-        markerCanvas.style.zIndex = '99999';
+        markerCanvas.style.zIndex = '2147483647';
         markerCanvas.style.pointerEvents = 'none'; // will toggle on/off
         markerCanvas.style.cursor = 'crosshair';
+        
+        const scale = 0.25;
+
+        markerCanvas.style.width = `${document.body.scrollWidth}px`;
+        markerCanvas.style.height = `${document.body.scrollHeight}px`;
         markerCanvas.width = document.body.scrollWidth;
         markerCanvas.height = document.body.scrollHeight;
+        
+        markerCanvas.style.willChange = 'transform';
+
         document.body.appendChild(markerCanvas);
+
         markerCtx = markerCanvas.getContext('2d');
+
+        markerCanvas.style.pointerEvents = 'auto';
+        markerCanvas.addEventListener('mousedown', onMarkerMouseDown);
+        markerCanvas.addEventListener('mousemove', onMarkerMouseMove);
+        markerCanvas.addEventListener('mouseup', onMarkerMouseUp);
+        markerCanvas.addEventListener('mouseleave', onMarkerMouseUp);
     }
 
     // Enable pointer events on canvas so it captures mouse
@@ -246,13 +263,12 @@ function enableMarkerMode() {
     markerCanvas.addEventListener('mousemove', onMarkerMouseMove);
     markerCanvas.addEventListener('mouseup', onMarkerMouseUp);
     markerCanvas.addEventListener('mouseleave', onMarkerMouseUp);
+    
 
     console.log('Marker mode enabled');
 }
 
 function disableMarkerMode() {
-    state.tool = 'highlighter';
-
     if (markerCanvas) {
         markerCanvas.style.pointerEvents = 'none';
         markerCanvas.removeEventListener('mousedown', onMarkerMouseDown);
@@ -285,7 +301,6 @@ function onMarkerMouseUp() {
     markerCtx.closePath();
 }
 
-// Clear all marker drawings
 function clearMarker() {
     if (markerCtx) {
         markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
