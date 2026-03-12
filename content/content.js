@@ -4,8 +4,9 @@ const state = {
     tool: 'highlighter',
     color: '#FFD700',
     markerSize: 16,
-    markerOpacity: 50
+    markerOpacity: 50,
 }
+
 
 //Message listener
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -15,8 +16,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             console.log("SETTING TOOL: ", request.value);
             state.tool = request.value;
             console.log("STATE.TOOL: ", state.tool);
+            disableMarkerMode();
+            disableEraserMode();
             if (request.value === 'marker') enableMarkerMode();
-            else disableMarkerMode();
+            else if (request.value === 'eraser') enableEraserMode();
             sendResponse({success: true});
             break;
         case 'SET_ANNOTATION_COLOR':
@@ -221,7 +224,7 @@ function clearHighlights() {
 let isDrawing = false;
 let markerCanvas = null;
 let markerCtx = null;
-let strokes = [];
+let operations = [];
 let currentStroke = null;
 
 function enableMarkerMode() {
@@ -262,15 +265,6 @@ function enableMarkerMode() {
     console.log('Marker mode enabled');
 }
 
-function redraw() {
-    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
-    markerCtx.save();
-    markerCtx.translate(-window.scrollX, -window.scrollY); // offset by scroll
-    strokes.forEach(stroke => drawStroke(stroke));
-    if (currentStroke) drawStroke(currentStroke);
-    markerCtx.restore();
-}
-
 window.addEventListener('scroll', () => {
     if (markerCanvas) requestAnimationFrame(redraw);
 });
@@ -284,12 +278,12 @@ function disableMarkerMode() {
         markerCanvas.removeEventListener('mouseleave', onMarkerMouseUp);
     }
     isDrawing = false;
-    console.log('Marker mode disabled');
 }
 
 function onMarkerMouseDown(e) {
     isDrawing = true;
     currentStroke = {
+        type: 'stroke',
         //Normalizing coordinates
         points: [
             (e.clientX + window.scrollX) / document.body.scrollWidth,
@@ -313,40 +307,35 @@ function onMarkerMouseMove(e) {
 function onMarkerMouseUp() {
     if (!isDrawing) return;
     isDrawing = false;
-    if (currentStroke) strokes.push(currentStroke);
+    if (currentStroke) operations.push(currentStroke);
     currentStroke = null;
 }
 
-function redraw() {
-    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);  
-    strokes.forEach(stroke => drawStroke(stroke));
-    if (currentStroke) drawStroke(currentStroke);
-}
 
-function drawStroke(stroke) {
+function drawStrokeToCtx(ctx, stroke) {
     const points = stroke.points;
-    if (points.length < 2) return;
-    markerCtx.beginPath();
-    markerCtx.moveTo(
+    if (points.length < 4) return;
+    ctx.beginPath();
+    ctx.moveTo(
         points[0] * document.body.scrollWidth - window.scrollX,
         points[1] * document.body.scrollHeight - window.scrollY
     );
     for (let i = 2; i < points.length; i += 2) {
-        markerCtx.lineTo(
+        ctx.lineTo(
             points[i] * document.body.scrollWidth - window.scrollX,
             points[i+1] * document.body.scrollHeight - window.scrollY
         );
     }
     const opacityHex = Math.round(stroke.opacity / 100 * 255).toString(16).padStart(2, '0');
-    markerCtx.strokeStyle = stroke.color + opacityHex;
-    markerCtx.lineWidth = stroke.size;
-    markerCtx.lineCap = 'round';
-    markerCtx.lineJoin = 'round';
-    markerCtx.stroke();
+    ctx.strokeStyle = stroke.color + opacityHex;
+    ctx.lineWidth = stroke.size;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
 }
 
 function clearMarker() {
-    strokes = [];
+    operations = [];
     currentStroke = null;
     if (markerCtx) markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
 }
@@ -361,3 +350,92 @@ window.addEventListener('resize', () => {
         redraw(); // redraw after resize since resizing clears the canvas
     }
 });
+
+
+//------------------------------------------------------------------------------
+//ERASER FUNCTIONALITY
+//------------------------------------------------------------------------------
+
+let isErasing = false;
+
+function enableEraserMode() {
+    if (!markerCanvas) return; // nothing to erase if canvas doesn't exist
+    markerCanvas.style.pointerEvents = 'auto';
+    markerCanvas.style.cursor = 'cell';
+    markerCanvas.addEventListener('mousedown', onEraserMouseDown);
+    markerCanvas.addEventListener('mousemove', onEraserMouseMove);
+    markerCanvas.addEventListener('mouseup', onEraserMouseUp);
+    markerCanvas.addEventListener('mouseleave', onEraserMouseUp);
+}
+
+function disableEraserMode() {
+    if (markerCanvas) {
+        markerCanvas.style.pointerEvents = 'none';
+        markerCanvas.removeEventListener('mousedown', onEraserMouseDown);
+        markerCanvas.removeEventListener('mousemove', onEraserMouseMove);
+        markerCanvas.removeEventListener('mouseup', onEraserMouseUp);
+        markerCanvas.removeEventListener('mouseleave', onEraserMouseUp);
+    }
+    isErasing = false;
+}
+
+function onEraserMouseDown(e) {
+    isErasing = true;
+    eraseAtPoint(e.clientX + window.scrollX, e.clientY + window.scrollY);
+}
+
+function onEraserMouseMove(e) {
+    if (!isErasing) return;
+    eraseAtPoint(e.clientX + window.scrollX, e.clientY + window.scrollY);
+}
+
+function onEraserMouseUp() {
+    isErasing = false;
+}
+
+function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+    let t = ((px - ax) * dx + (py - ay) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    return Math.sqrt((px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2);
+}
+
+function eraseAtPoint(x, y) {
+    const nx = x / document.body.scrollWidth;
+    const ny = y / document.body.scrollHeight;
+    const nr = state.markerSize / document.body.scrollWidth;
+    operations.push({ type: 'erase', nx, ny, nr });
+    requestAnimationFrame(redraw);
+}
+
+//Redraw
+function redraw() {
+    const offscreen = new OffscreenCanvas(markerCanvas.width, markerCanvas.height);
+    const offCtx = offscreen.getContext('2d');
+
+    const allOps = currentStroke ? [...operations, currentStroke] : operations;
+
+    allOps.forEach(op => {
+        if (op.type === 'stroke') {
+            drawStrokeToCtx(offCtx, op);
+        } else if (op.type === 'erase') {
+            offCtx.save();
+            offCtx.globalCompositeOperation = 'destination-out';
+            offCtx.beginPath();
+            offCtx.arc(
+                op.nx * document.body.scrollWidth - window.scrollX,
+                op.ny * document.body.scrollHeight - window.scrollY,
+                op.nr * document.body.scrollWidth,
+                0, Math.PI * 2
+            );
+            offCtx.fillStyle = 'rgba(0,0,0,1)';
+            offCtx.fill();
+            offCtx.restore();
+        }
+    });
+
+    markerCtx.clearRect(0, 0, markerCanvas.width, markerCanvas.height);
+    markerCtx.drawImage(offscreen, 0, 0);
+}

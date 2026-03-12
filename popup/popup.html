@@ -27,13 +27,18 @@
     <div class="section-label">Tool</div>
     <div class="tool-toggle">
         <button class="tool-btn " id="btn-highlighter" data-tool="highlighter">
-        <span class="tool-icon">🖊</span>
-        <span class="tool-name">Highlighter</span>
+            <span class="tool-icon">🖊</span>
+            <span class="tool-name">Highlighter</span>
         </button>
         <button class="tool-btn" id="btn-marker" data-tool="marker">
-        <span class="tool-icon">🖌</span>
-        <span class="tool-name">Marker</span>
+            <span class="tool-icon">🖌</span>
+            <span class="tool-name">Marker</span>
         </button>
+        <button class="tool-btn" id="btn-eraser" data-tool="eraser">
+            <span class="tool-icon">🧼</span>
+            <span class="tool-name">Eraser</span>
+        </button>
+        
     </div>
 
     <!-- Color Palette w/ marker adjustment -->
@@ -45,7 +50,13 @@
         <button class="color-btn color-pink"   data-color="#f472b6" title="Pink"></button>
         <button class="color-btn color-blue"   data-color="#60a5fa" title="Blue"></button>
         <button class="color-btn color-orange" data-color="#fb923c" title="Orange"></button>
-        <!-- Marker property selectors -->
+        <button class="color-btn color-custom" id="color-custom-btn" title="Custom">
+            <input type="color" id="color-picker" value="#ffffff">
+        </button>
+    </div>
+    <div class="section-label">Marker Options</div>
+    <!-- Marker property selectors -->
+    <div class="marker-options">
         <div class="marker-control">
             <input type="range" id="marker-size" min="4" max="40" value="16" class="size-slider">
             <span id="marker-size-label" class="marker-label">16px</span>
@@ -53,7 +64,8 @@
         <div class="marker-control">
             <input type="text" id="marker-opacity" value="50" class="opacity-input" maxlength="3">
             <span class="marker-label">% Opacity</span>
-        </div>    
+        </div>
+        <canvas id="marker-preview" width="50" height="50"></canvas>
     </div>
 
     <div class="divider"></div>
