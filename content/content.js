@@ -1,7 +1,7 @@
 console.log("content.js loaded");
 
 const state = {
-    tool: 'highlighter',
+    tool: 'no_tool',
     color: '#FFD700',
     markerSize: 16,
     markerOpacity: 50,
