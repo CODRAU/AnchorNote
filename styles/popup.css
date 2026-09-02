@@ -72,21 +72,18 @@ body::before {
 }
 
 .logo {
-    width: 30px;
-    height: 30px;
-    background: linear-gradient(135deg, var(--accent), #2a5cd4);
-    border-radius: 7px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 12px var(--accent-glow);
     flex-shrink: 0;
 }
 
-.logo svg {
-    width: 16px;
-    height: 16px;
-    fill: white;
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .brand {
